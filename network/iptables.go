@@ -44,8 +44,10 @@ func MasqRules(ipn ip.IP4Net, lease *subnet.Lease) []IPTablesRule {
 	sn := lease.Subnet.String()
 
 	return []IPTablesRule{
-		// This rule makes sure we don't NAT traffic within overlay network (e.g. coming out of docker0)
-		{"nat", "POSTROUTING", []string{"-s", n, "-d", n, "-j", "RETURN"}},
+		// This rule makes sure we don't NAT traffic within current Node's overlay network (e.g. coming out of docker0)
+		{"nat", "POSTROUTING", []string{"-s", sn, "-d", sn, "-j", "RETURN"}},
+		// NAT if it sends to another Node on current Node
+		{"nat", "POSTROUTING", []string{"-s", sn, "-d", n, "-j", "MASQUERADE"}},
 		// NAT if it's not multicast traffic
 		{"nat", "POSTROUTING", []string{"-s", n, "!", "-d", "224.0.0.0/4", "-j", "MASQUERADE"}},
 		// Prevent performing Masquerade on external traffic which arrives from a Node that owns the container/pod IP address
